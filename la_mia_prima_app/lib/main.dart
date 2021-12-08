@@ -40,14 +40,29 @@ class LaMiaSecondaApp extends StatelessWidget {
     return MaterialApp(
       title: 'La mia seconda App',
       theme: ThemeData(
-        primarySwatch: Colors.red,
+        primarySwatch: Colors.blue,
       ),
       home: Scaffold(
         appBar: AppBar(
           title: const Text('Benvenuti al Corso di Flutter'),
         ),
-        body: RandomSuggestions(),
+        body: RandomSuggestions(false),
       ),
+    );
+  }
+}
+
+class LaMiaTerzaApp extends StatelessWidget {
+  const LaMiaTerzaApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'La mia terza app',
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+      ),
+      home: RandomSuggestions(true),
     );
   }
 }
@@ -66,16 +81,77 @@ class _RandomWordsState extends State<RandomWords> {
 }
 
 class RandomSuggestions extends StatefulWidget {
+  bool _navigazioneAbilitata = false;
+
+  RandomSuggestions(this._navigazioneAbilitata);
+
   @override
-  _RandomSuggestionsState createState() => _RandomSuggestionsState();
+  _RandomSuggestionsState createState() =>
+      _RandomSuggestionsState(this._navigazioneAbilitata);
 }
 
 class _RandomSuggestionsState extends State<RandomSuggestions> {
   final _suggestions = <WordPair>[];
   final _biggerFont = const TextStyle(fontSize: 18.0);
+  final _suggestionSaved = <WordPair>{};
+  bool _navigazioneAbilitata = false;
+
+  _RandomSuggestionsState(this._navigazioneAbilitata);
 
   @override
   Widget build(BuildContext context) {
+    return _navigazioneAbilitata ? _terzaApp(context) : _buildList(context);
+  }
+
+  Widget _terzaApp(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('La mia terza App'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.list),
+            onPressed: _goToSalvati,
+            tooltip: 'Parole salvate',
+          ),
+        ],
+      ),
+      body: _buildList(context),
+    );
+  }
+
+  _goToSalvati() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) {
+          final tiles = _suggestionSaved.map(
+            (pair) {
+              return ListTile(
+                title: Text(
+                  pair.asPascalCase,
+                  style: _biggerFont,
+                ),
+              );
+            },
+          );
+          final divided = tiles.isNotEmpty
+              ? ListTile.divideTiles(
+                  context: context,
+                  tiles: tiles,
+                ).toList()
+              : <Widget>[];
+
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Parole salvate'),
+            ),
+            body: ListView(children: divided),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildList(BuildContext context) {
     return ListView.builder(
         padding: const EdgeInsets.all(16.0),
         itemBuilder: /*1*/ (context, i) {
@@ -86,7 +162,7 @@ class _RandomSuggestionsState extends State<RandomSuggestions> {
           if (index >= _suggestions.length) {
             _suggestions.addAll(generateWordPairs().take(10)); /*4*/
           }
-          return _buildRow(_suggestions[index]);
+          return _buildRowWithIcon(_suggestions[index]);
         });
   }
 
@@ -96,6 +172,30 @@ class _RandomSuggestionsState extends State<RandomSuggestions> {
         pair.asPascalCase,
         style: _biggerFont,
       ),
+    );
+  }
+
+  Widget _buildRowWithIcon(WordPair pair) {
+    final alreadySaved = _suggestionSaved.contains(pair);
+    return ListTile(
+      title: Text(
+        pair.asPascalCase,
+        style: _biggerFont,
+      ),
+      trailing: Icon(
+        alreadySaved ? Icons.favorite : Icons.favorite_border,
+        color: alreadySaved ? Colors.red : null,
+        semanticLabel: alreadySaved ? 'Rimuovi' : 'Salva',
+      ),
+      onTap: () {
+        setState(() {
+          if (alreadySaved) {
+            _suggestionSaved.remove(pair);
+          } else {
+            _suggestionSaved.add(pair);
+          }
+        });
+      },
     );
   }
 }
